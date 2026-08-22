@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+*.apk
 .dart_tool/
 build/
 .flutter-plugins
