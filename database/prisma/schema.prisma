@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CartStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+}
+
+enum ShoppingSessionStatus {
+  ACTIVE
+  PENDING_VALIDATION
+  APPROVED
+  REQUIRES_ASSISTANCE
+  CANCELLED
+}
+
+enum ValidationStatus {
+  APPROVED
+  REJECTED
+}
+
+enum PaymentTokenStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELLED
+}
+
+model User {
+  id           String            @id @default(uuid())
+  name         String
+  email        String            @unique
+  passwordHash String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  sessions     ShoppingSession[]
+}
+
+model Product {
+  id          String         @id @default(uuid())
+  barcode     String         @unique
+  name        String
+  brand       String
+  category    String
+  price       Decimal        @db.Decimal(10, 2)
+  weightGrams Int
+  imageUrl    String?
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  items       ShoppingItem[]
+}
+
+model Cart {
+  id        String            @id @default(uuid())
+  code      String            @unique
+  status    CartStatus         @default(AVAILABLE)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  sessions  ShoppingSession[]
+}
+
+model ShoppingSession {
+  id                  String                @id @default(uuid())
+  userId              String
+  cartId              String
+  status              ShoppingSessionStatus @default(ACTIVE)
+  totalAmount         Decimal               @default(0) @db.Decimal(10, 2)
+  expectedWeightGrams Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  finishedAt          DateTime?
+  user                User                  @relation(fields: [userId], references: [id])
+  cart                Cart                  @relation(fields: [cartId], references: [id])
+  items               ShoppingItem[]
+  validation          Validation?
+  paymentToken        PaymentToken?
+
+  @@index([userId, status])
+  @@index([cartId, status])
+}
+
+model ShoppingItem {
+  id               String          @id @default(uuid())
+  sessionId        String
+  productId        String
+  quantity         Int
+  unitPrice        Decimal         @db.Decimal(10, 2)
+  unitWeightGrams  Int
+  totalPrice       Decimal         @db.Decimal(10, 2)
+  totalWeightGrams Int
+  createdAt        DateTime        @default(now())
+  session          ShoppingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  product          Product         @relation(fields: [productId], references: [id])
+
+  @@unique([sessionId, productId])
+}
+
+model Validation {
+  id                    String           @id @default(uuid())
+  sessionId             String           @unique
+  expectedWeightGrams   Int
+  measuredWeightGrams   Int
+  differenceGrams       Int
+  tolerancePercentage   Decimal          @db.Decimal(5, 2)
+  status                ValidationStatus
+  validatedAt           DateTime         @default(now())
+  session               ShoppingSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model PaymentToken {
+  id        String             @id @default(uuid())
+  sessionId String             @unique
+  tokenHash String             @unique
+  status    PaymentTokenStatus @default(ACTIVE)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime           @default(now())
+  session   ShoppingSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
