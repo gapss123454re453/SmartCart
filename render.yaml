@@ -20,6 +20,8 @@ services:
         value: "0.5"
       - key: EXIT_TOKEN_TTL_MINUTES
         value: "15"
+      - key: NODE_VERSION
+        value: "22"
 
 databases:
   - name: smartcart-postgres
