@@ -9,6 +9,8 @@ import 'services/api_client.dart';
 void main() => runApp(const SmartCartApp());
 
 final currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+const smartCartLogoAsset = 'assets/branding/smartcart_logo.png';
+const smartCartIconAsset = 'assets/branding/smartcart_icon.png';
 
 class AppState extends ChangeNotifier {
   AppState(this.api);
@@ -144,24 +146,71 @@ class _SmartCartAppState extends State<SmartCartApp> {
   }
 }
 
+class BrandLogo extends StatelessWidget {
+  const BrandLogo({required this.height, super.key});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      smartCartLogoAsset,
+      height: height,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+  }
+}
+
+class BrandIcon extends StatelessWidget {
+  const BrandIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      smartCartIconAsset,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+  }
+}
+
+class BrandBanner extends StatelessWidget {
+  const BrandBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        height: 132,
+        alignment: Alignment.center,
+        color: Colors.white,
+        padding: const EdgeInsets.all(12),
+        child: const BrandLogo(height: 112),
+      ),
+    );
+  }
+}
+
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.shopping_cart_checkout, size: 72),
-            SizedBox(height: 16),
-            Text(
+            const BrandLogo(height: 210),
+            const SizedBox(height: 12),
+            const Text(
               'SmartCart',
               style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
             ),
-            SizedBox(height: 8),
-            Text('Seu carrinho. Seu celular. Sua compra.'),
+            const SizedBox(height: 8),
+            const Text('Seu carrinho. Seu celular. Sua compra.'),
           ],
         ),
       ),
@@ -212,7 +261,7 @@ class _AuthScreenState extends State<AuthScreen> {
           padding: const EdgeInsets.all(24),
           children: [
             const SizedBox(height: 32),
-            const Icon(Icons.local_grocery_store, size: 64),
+            const BrandLogo(height: 170),
             const SizedBox(height: 16),
             const Text(
               'SmartCart',
@@ -273,6 +322,7 @@ class HomeScreen extends StatelessWidget {
     final session = state.session;
     return Scaffold(
       appBar: AppBar(
+        leading: const Padding(padding: EdgeInsets.all(8), child: BrandIcon()),
         title: const Text('SmartCart'),
         actions: [
           IconButton(
@@ -291,6 +341,8 @@ class HomeScreen extends StatelessWidget {
               'Ola, ${state.user!.name}',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
+            const SizedBox(height: 12),
+            const BrandBanner(),
             const SizedBox(height: 12),
             SummaryCard(session: session),
             if (session == null) ...[

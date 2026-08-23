@@ -1,7 +1,21 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const prisma = new PrismaClient();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+type ImportedProduct = {
+  barcode: string;
+  name: string;
+  brand: string;
+  category: string;
+  price: number;
+  weightGrams: number;
+  imageUrl: string | null;
+};
 
 const products = [
   ["7891000000010", "Arroz Tipo 1 5kg", "Campo Bom", "Mercearia", 25.9, 5120],
@@ -62,6 +76,25 @@ async function main() {
       }
     });
   }
+
+  const importedProductsPath = join(__dirname, "imported-products.json");
+  const importedProducts = JSON.parse(
+    readFileSync(importedProductsPath, "utf-8")
+  ) as ImportedProduct[];
+
+  await prisma.product.createMany({
+    data: importedProducts.map((product) => ({
+      barcode: product.barcode,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      price: product.price,
+      weightGrams: product.weightGrams,
+      imageUrl: product.imageUrl,
+      active: true
+    })),
+    skipDuplicates: true
+  });
 
   for (let index = 1; index <= 5; index += 1) {
     const code = `CART-${String(index).padStart(6, "0")}`;
