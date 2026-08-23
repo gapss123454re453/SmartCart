@@ -20,6 +20,10 @@ class Product {
     required this.price,
     required this.weightGrams,
     this.imageUrl,
+    this.packageQuantity,
+    this.originBase,
+    this.sourceUrl,
+    this.retailerEvidence = const [],
   });
 
   final String id;
@@ -30,6 +34,10 @@ class Product {
   final double price;
   final int weightGrams;
   final String? imageUrl;
+  final String? packageQuantity;
+  final String? originBase;
+  final String? sourceUrl;
+  final List<RetailerEvidence> retailerEvidence;
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
@@ -41,6 +49,35 @@ class Product {
       price: double.parse(json['price'].toString()),
       weightGrams: json['weightGrams'],
       imageUrl: json['imageUrl'],
+      packageQuantity: json['packageQuantity'],
+      originBase: json['originBase'],
+      sourceUrl: json['sourceUrl'],
+      retailerEvidence: ((json['retailerEvidence'] ?? []) as List)
+          .map((item) => RetailerEvidence.fromJson(item))
+          .toList(),
+    );
+  }
+}
+
+class RetailerEvidence {
+  RetailerEvidence({
+    required this.retailerName,
+    this.region,
+    this.linkMethod,
+    this.confidence,
+  });
+
+  final String retailerName;
+  final String? region;
+  final String? linkMethod;
+  final String? confidence;
+
+  factory RetailerEvidence.fromJson(Map<String, dynamic> json) {
+    return RetailerEvidence(
+      retailerName: json['retailerName'],
+      region: json['region'],
+      linkMethod: json['linkMethod'],
+      confidence: json['confidence'],
     );
   }
 }

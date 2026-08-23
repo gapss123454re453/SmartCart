@@ -52,10 +52,31 @@ model Product {
   price       Decimal        @db.Decimal(10, 2)
   weightGrams Int
   imageUrl    String?
+  packageQuantity String?
+  originBase  String?
+  sourceUrl   String?
   active      Boolean        @default(true)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   items       ShoppingItem[]
+  retailerEvidence ProductRetailerEvidence[]
+}
+
+model ProductRetailerEvidence {
+  id               String   @id @default(uuid())
+  productBarcode   String
+  retailerName     String
+  region           String?
+  linkMethod       String?
+  confidence       String?
+  sourceCatalogUrl String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  product          Product  @relation(fields: [productBarcode], references: [barcode], onDelete: Cascade)
+
+  @@unique([productBarcode, retailerName, sourceCatalogUrl])
+  @@index([retailerName])
+  @@index([productBarcode])
 }
 
 model Cart {

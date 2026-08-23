@@ -627,19 +627,66 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (product.imageUrl != null) ...[
+                    Center(
+                      child: Image.network(
+                        product.imageUrl!,
+                        height: 160,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.inventory_2_outlined, size: 72),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Text(
                     product.name,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   Text(product.brand),
                   const SizedBox(height: 12),
+                  Text('Codigo: ${product.barcode}'),
                   Text('Categoria: ${product.category}'),
+                  if (product.packageQuantity != null)
+                    Text('Embalagem: ${product.packageQuantity}'),
                   Text('Preco: ${currency.format(product.price)}'),
                   Text('Peso: ${product.weightGrams} g'),
+                  if (product.originBase != null)
+                    Text('Base: ${product.originBase}'),
                 ],
               ),
             ),
           ),
+          if (product.retailerEvidence.isNotEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Redes com evidencia',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    ...product.retailerEvidence.take(4).map((evidence) {
+                      final confidence = evidence.confidence == null
+                          ? ''
+                          : ' | ${evidence.confidence}';
+                      return ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.storefront),
+                        title: Text(evidence.retailerName),
+                        subtitle: Text(
+                          '${evidence.region ?? 'regiao nao informada'}$confidence',
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
           Row(
             children: [
               IconButton.filledTonal(

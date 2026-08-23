@@ -10,7 +10,8 @@ productRoutes.use(requireAuth);
 productRoutes.get("/", async (_req, res) => {
   const products = await prisma.product.findMany({
     where: { active: true },
-    orderBy: { name: "asc" }
+    orderBy: { name: "asc" },
+    take: 200
   });
   return res.json(products);
 });
@@ -18,7 +19,8 @@ productRoutes.get("/", async (_req, res) => {
 productRoutes.get("/barcode/:barcode", async (req, res, next) => {
   try {
     const product = await prisma.product.findFirst({
-      where: { barcode: req.params.barcode, active: true }
+      where: { barcode: req.params.barcode, active: true },
+      include: { retailerEvidence: { orderBy: { retailerName: "asc" } } }
     });
     if (!product) throw new HttpError(404, "Produto nao cadastrado.");
     return res.json(product);

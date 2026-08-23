@@ -45,13 +45,8 @@ def infer_demo_price(cents, index, category):
     return round(base, 2)
 
 
-def main():
-    if len(sys.argv) != 3:
-        raise SystemExit("Usage: build_imported_products.py input.csv output.json")
-
-    source = Path(sys.argv[1])
-    output = Path(sys.argv[2])
-    dataframe = pd.read_csv(source)
+def build_products(source, output):
+    dataframe = pd.read_csv(source, dtype={"gtin": "string"})
 
     products = []
     for index, row in dataframe.iterrows():
@@ -69,12 +64,59 @@ def main():
                 "price": infer_demo_price(row.get("preco_centavos"), index, row.get("categoria")),
                 "weightGrams": infer_weight_grams(row.get("quantidade_embalagem"), index),
                 "imageUrl": clean(row.get("imagem_url")) or None,
+                "packageQuantity": clean(row.get("quantidade_embalagem")) or None,
+                "originBase": clean(row.get("base_origem")) or clean(row.get("fonte")) or None,
+                "sourceUrl": clean(row.get("fonte_gtin_url")) or clean(row.get("fonte_url")) or None,
             }
         )
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(products, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Wrote {len(products)} products to {output}")
+
+
+def build_retailer_evidence(source, output):
+    dataframe = pd.read_csv(source, dtype={"gtin": "string"})
+    evidence = []
+    for _, row in dataframe.iterrows():
+        barcode = clean(row.get("gtin"))
+        retailer_name = clean(row.get("rede"))
+        if not barcode or not retailer_name:
+            continue
+
+        evidence.append(
+            {
+                "productBarcode": barcode,
+                "retailerName": retailer_name,
+                "region": clean(row.get("unidade_regiao")) or None,
+                "linkMethod": clean(row.get("metodo_vinculo")) or None,
+                "confidence": clean(row.get("confianca")) or None,
+                "sourceCatalogUrl": clean(row.get("fonte_catalogo_url")) or None,
+                "notes": clean(row.get("observacao")) or None,
+            }
+        )
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"Wrote {len(evidence)} retailer evidence rows to {output}")
+
+
+def main():
+    if len(sys.argv) != 4:
+        raise SystemExit(
+            "Usage: build_imported_products.py products|retailers input.csv output.json"
+        )
+
+    mode = sys.argv[1]
+    source = Path(sys.argv[2])
+    output = Path(sys.argv[3])
+
+    if mode == "products":
+        build_products(source, output)
+    elif mode == "retailers":
+        build_retailer_evidence(source, output)
+    else:
+        raise SystemExit(f"Unknown mode: {mode}")
 
 
 if __name__ == "__main__":

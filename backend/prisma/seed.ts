@@ -15,6 +15,19 @@ type ImportedProduct = {
   price: number;
   weightGrams: number;
   imageUrl: string | null;
+  packageQuantity: string | null;
+  originBase: string | null;
+  sourceUrl: string | null;
+};
+
+type RetailerEvidence = {
+  productBarcode: string;
+  retailerName: string;
+  region: string | null;
+  linkMethod: string | null;
+  confidence: string | null;
+  sourceCatalogUrl: string | null;
+  notes: string | null;
 };
 
 const products = [
@@ -70,9 +83,12 @@ async function main() {
         name,
         brand,
         category,
-        price,
-        weightGrams,
-        imageUrl: `https://placehold.co/300x300/png?text=${encodeURIComponent(name)}`
+      price,
+      weightGrams,
+      imageUrl: `https://placehold.co/300x300/png?text=${encodeURIComponent(name)}`,
+      packageQuantity: null,
+      originBase: "SmartCart demo",
+      sourceUrl: null
       }
     });
   }
@@ -91,7 +107,28 @@ async function main() {
       price: product.price,
       weightGrams: product.weightGrams,
       imageUrl: product.imageUrl,
+      packageQuantity: product.packageQuantity,
+      originBase: product.originBase,
+      sourceUrl: product.sourceUrl,
       active: true
+    })),
+    skipDuplicates: true
+  });
+
+  const retailerEvidencePath = join(__dirname, "retailer-evidence.json");
+  const retailerEvidence = JSON.parse(
+    readFileSync(retailerEvidencePath, "utf-8")
+  ) as RetailerEvidence[];
+
+  await prisma.productRetailerEvidence.createMany({
+    data: retailerEvidence.map((evidence) => ({
+      productBarcode: evidence.productBarcode,
+      retailerName: evidence.retailerName,
+      region: evidence.region,
+      linkMethod: evidence.linkMethod,
+      confidence: evidence.confidence,
+      sourceCatalogUrl: evidence.sourceCatalogUrl,
+      notes: evidence.notes
     })),
     skipDuplicates: true
   });
