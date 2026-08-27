@@ -30,6 +30,9 @@ type RetailerEvidence = {
   notes: string | null;
 };
 
+const productSeedBatchSize = Number(process.env.PRODUCT_SEED_BATCH_SIZE ?? 500);
+const evidenceSeedBatchSize = Number(process.env.EVIDENCE_SEED_BATCH_SIZE ?? 500);
+
 const products = [
   ["7891000000010", "Arroz Tipo 1 5kg", "Campo Bom", "Mercearia", 25.9, 5120],
   ["7891000000027", "Feijao Carioca 1kg", "Grao Nobre", "Mercearia", 8.5, 1020],
@@ -62,6 +65,16 @@ const products = [
   ["7891000000294", "Frango Congelado 1kg", "Ave Boa", "Carnes", 13.9, 1030],
   ["7891000000300", "Carne Moida 500g", "Boi Nobre", "Carnes", 19.99, 520]
 ] as const;
+
+async function createManyInBatches<T>(
+  items: T[],
+  batchSize: number,
+  createBatch: (batch: T[]) => Promise<unknown>
+) {
+  for (let index = 0; index < items.length; index += batchSize) {
+    await createBatch(items.slice(index, index + batchSize));
+  }
+}
 
 async function main() {
   await prisma.user.upsert({
@@ -98,40 +111,52 @@ async function main() {
     readFileSync(importedProductsPath, "utf-8")
   ) as ImportedProduct[];
 
-  await prisma.product.createMany({
-    data: importedProducts.map((product) => ({
-      barcode: product.barcode,
-      name: product.name,
-      brand: product.brand,
-      category: product.category,
-      price: product.price,
-      weightGrams: product.weightGrams,
-      imageUrl: product.imageUrl,
-      packageQuantity: product.packageQuantity,
-      originBase: product.originBase,
-      sourceUrl: product.sourceUrl,
-      active: true
-    })),
-    skipDuplicates: true
-  });
+  await createManyInBatches(
+    importedProducts,
+    productSeedBatchSize,
+    async (batch) => {
+      await prisma.product.createMany({
+        data: batch.map((product) => ({
+          barcode: product.barcode,
+          name: product.name,
+          brand: product.brand,
+          category: product.category,
+          price: product.price,
+          weightGrams: product.weightGrams,
+          imageUrl: product.imageUrl,
+          packageQuantity: product.packageQuantity,
+          originBase: product.originBase,
+          sourceUrl: product.sourceUrl,
+          active: true
+        })),
+        skipDuplicates: true
+      });
+    }
+  );
 
   const retailerEvidencePath = join(__dirname, "retailer-evidence.json");
   const retailerEvidence = JSON.parse(
     readFileSync(retailerEvidencePath, "utf-8")
   ) as RetailerEvidence[];
 
-  await prisma.productRetailerEvidence.createMany({
-    data: retailerEvidence.map((evidence) => ({
-      productBarcode: evidence.productBarcode,
-      retailerName: evidence.retailerName,
-      region: evidence.region,
-      linkMethod: evidence.linkMethod,
-      confidence: evidence.confidence,
-      sourceCatalogUrl: evidence.sourceCatalogUrl,
-      notes: evidence.notes
-    })),
-    skipDuplicates: true
-  });
+  await createManyInBatches(
+    retailerEvidence,
+    evidenceSeedBatchSize,
+    async (batch) => {
+      await prisma.productRetailerEvidence.createMany({
+        data: batch.map((evidence) => ({
+          productBarcode: evidence.productBarcode,
+          retailerName: evidence.retailerName,
+          region: evidence.region,
+          linkMethod: evidence.linkMethod,
+          confidence: evidence.confidence,
+          sourceCatalogUrl: evidence.sourceCatalogUrl,
+          notes: evidence.notes
+        })),
+        skipDuplicates: true
+      });
+    }
+  );
 
   for (let index = 1; index <= 5; index += 1) {
     const code = `CART-${String(index).padStart(6, "0")}`;
